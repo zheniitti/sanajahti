@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 class Ruutu extends StatefulWidget {
   final GlobalKey key;
-  final int index;
+  final int location;
   final Color color;
   final letter;
-  Ruutu({this.key, this.color, this.letter, this.index});
+  Ruutu({this.key, this.color, this.letter, this.location});
   @override
   _RuutuState createState() => _RuutuState();
 }
@@ -15,6 +15,7 @@ class _RuutuState extends State<Ruutu> {
   Widget build(BuildContext context) {
     return AnimatedContainer(
       key: widget.key,
+      margin: EdgeInsets.all(0.0),
       padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15), color: widget.color),

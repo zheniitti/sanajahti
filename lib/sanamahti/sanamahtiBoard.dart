@@ -1,44 +1,65 @@
 import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:auto_size_text/auto_size_text.dart';
+import 'package:flutter/services.dart';
 
 class SanamahtiBoard extends StatefulWidget {
   _SanamahtiBoardState createState() => _SanamahtiBoardState();
 }
 
 class _SanamahtiBoardState extends State<SanamahtiBoard> {
-  String appBarTitle = "Sanamahti Grid";
+  String appBarText = "Sanamahti Board";
   bool pointerDown = false; //when sanamahti grid being touched, pointer is down
   int latestPointerIndex = -1;
   int currentPointerIndex;
   final Color upColor = Colors.purple; //inactive color
   final Color downColor = Colors.blue[500]; //active color
   Color ccolor = Colors.teal;
-  List<Widget> widgetList = [];
   List<int> downedIndexesList = [];
 
   ///list of list [key$index, getNeighbours(index), index]
   ///ruudun key, naapurin indeksi ja oma indeksi. Kaikki ruudut
   List ruutuList = [];
-  final letterList = [];
+  List<String> letterList = [
+    'u',
+    'S',
+    'ä',
+    'e',
+    'k',
+    'n',
+    'l',
+    's',
+    'e',
+    'a',
+    'u',
+    'l',
+    'k',
+    'l',
+    's',
+    'u'
+  ];
   var becameList = [];
   int touchAreaPadding = 18;
   Curve curve = Curves.easeOutCirc;
-  double ruutuSize = 50;
+  double ruutuSize = 100;
 
   @override
   void initState() {
     // WidgetsBinding.instance.addPostFrameCallback(_afterLayout); what is this?
-    createBoardOffline();
+    createOfflineBoard();
     //createBoardOnline(); //no code yet
-    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     return Scaffold(
       appBar: AppBar(
-        title: Center(child: Text(appBarTitle)),
+        title: Center(child: Text(appBarText)),
       ),
       body: SizedBox(
         child: AbsorbPointer(
@@ -48,38 +69,66 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
             onPanUpdate: updateBoardOnPan,
             onPanEnd: updateOnPanEnd,
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: GridView.count(
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  physics: NeverScrollableScrollPhysics(),
-                  crossAxisCount: 4,
-                  children: ruutuList.map((lis) {
-                    GlobalKey key = lis[0];
-                    int index = lis[2];
-                    return AnimatedContainer(
-                      key: key,
-                      height: 0.8 * ruutuSize,
-                      padding: EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          color: getColor(index)),
-                      child: Center(
-                          child: Text(
-                        letterList[index].toString(),
-                        style: TextStyle(
-                            fontSize: 0.5 * ruutuSize,
-                            fontWeight: FontWeight.bold),
-                      )),
-                      duration: Duration(milliseconds: 600),
-                      curve: curve,
-                    );
-                  }).toList()),
+              padding: const EdgeInsets.all(25.0),
+              child: Board(),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget Board() {
+    return Container(
+      child: LayoutBuilder(
+        builder: (context, constraints) => GridView.count(
+            childAspectRatio: 1,
+            crossAxisSpacing: constraints.maxWidth / 4 * 0.1,
+            mainAxisSpacing: constraints.maxWidth / 4 * 0.1,
+            physics: NeverScrollableScrollPhysics(),
+            crossAxisCount: 4,
+            children: ruutuList.map((lis) {
+              GlobalKey key = lis[0];
+              int index = lis[2];
+              return Ruutu(index, key, constraints);
+            }).toList()),
+      ),
+    );
+  }
+
+  AnimatedContainer Ruutu(
+      int index, GlobalKey key, BoxConstraints constraints) {
+    return AnimatedContainer(
+      key: key,
+      margin: downedIndexesList.contains(index)
+          ? EdgeInsets.all(5)
+          : EdgeInsets.all(0),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(constraints.maxWidth / 4 * 0.2),
+          color: getColor(index)),
+      child: Center(child:
+          LayoutBuilder(builder: (BuildContext c, BoxConstraints strain) {
+        return Text(
+          letterList[index].toUpperCase(),
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: strain.maxHeight * 0.6,
+              fontFamily: 'Courier'),
+        );
+      })),
+      duration: Duration(milliseconds: 600),
+      curve: curve,
+    );
+  }
+
+  void createOfflineBoard() {
+    for (int i = 0; i < 16; i++) {
+      /*  String letter = 'iatsenukolrpmävyhjdö'[
+          Random().nextInt(20)] /*  random.nextInt(28) */;
+      letterList.add(letter); */
+      GlobalKey key = GlobalKey();
+      ruutuList.add([key, getNeighbours(i), i]);
+    }
   }
 
   getColor(int i) {
@@ -88,7 +137,7 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
   }
 
   void updateBoardOnPanDown(DragDownDetails t) {
-    ruutuSize = getRuutuSize();
+    setRuutuSize();
     int currentPointerIndex = getCurrentPointerIndexD(t);
     if (isActivatable(currentPointerIndex)) {
       downedIndexesList.add(currentPointerIndex);
@@ -97,7 +146,7 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
     setState(() {
       pointerDown = true;
       int length = downedIndexesList.length;
-      appBarTitle = becameList.toString() /* '$length $downedIndexesList' */;
+      appBarText = becameList.toString() /* '$length $downedIndexesList' */;
     });
   }
 
@@ -114,7 +163,7 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
       wentBackToLastIndex(currentPointerIndex);
 
       int length = downedIndexesList.length;
-      appBarTitle = becameList.toString() /* '$length $downedIndexesList' */;
+      appBarText = becameList.toString() /* '$length $downedIndexesList' */;
     });
   }
 
@@ -124,7 +173,7 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
       pointerDown ? ccolor = downColor : ccolor = upColor;
 
       int length = downedIndexesList.length;
-      appBarTitle = '$length $downedIndexesList';
+      appBarText = '$length $downedIndexesList';
       downedIndexesList.clear();
       becameList.clear();
     });
@@ -293,9 +342,9 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
     return postitionlist;
   }
 
-  getRuutuSize() {
-    RenderBox ruutuBox = ruutuList[0][0].currentContext.findRenderObject();
-    return ruutuBox.size.width;
+  setRuutuSize() {
+    RenderBox ruutu = ruutuList[0][0].currentContext.findRenderObject();
+    this.ruutuSize = ruutu.size.width;
   }
 
   bool isActivatable(int currentPointerIndex) {
@@ -318,33 +367,6 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
     if (length > 1 && currentPointerIndex == downedIndexesList[length - 2]) {
       becameList.removeLast();
       downedIndexesList.removeLast();
-    }
-  }
-
-  void createBoardOffline() {
-    var random = new Random();
-    for (int i = 0; i < 16; i++) {
-      GlobalKey key = GlobalKey();
-      var letter =
-          'iatsenukolrpmävyhjdö'[random.nextInt(20)] /*  random.nextInt(28) */;
-      letterList.add(letter);
-      ruutuList.add([key, getNeighbours(i), i]);
-      //next creating container
-      AnimatedContainer ruutu = AnimatedContainer(
-        key: key,
-        color: upColor,
-        padding: EdgeInsets.all(10),
-        child: Center(
-            child: Expanded(
-          child: Text(
-            letter,
-            style: TextStyle(fontSize: 20),
-          ),
-        )),
-        curve: Curves.easeInOutBack,
-        duration: Duration(milliseconds: 1000),
-      );
-      widgetList.add(ruutu);
     }
   }
 }
