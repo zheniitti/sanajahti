@@ -1,6 +1,6 @@
 # sanajahti
 
-A new Flutter project.
+Minun oma flutter-projekti, jossa kokeilen oman sanajahti-pelin rakentamista. 
 
 ## Getting Started
 
