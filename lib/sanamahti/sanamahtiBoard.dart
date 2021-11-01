@@ -9,7 +9,6 @@ class SanamahtiBoard extends StatefulWidget {
 }
 
 class _SanamahtiBoardState extends State<SanamahtiBoard> {
-  String appBarText = "Sanamahti Board";
   bool pointerDown = false; //when sanamahti grid being touched, pointer is down
   int latestPointerIndex = -1;
   int currentPointerIndex;
@@ -39,14 +38,14 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
     's',
     'u'
   ];
-  var becameList = [];
-  int touchAreaPadding = 18;
+  List becameList = [];
+  String becameText = "Etsi sanoja";
+  int touchAreaPadding = 10;
   Curve curve = Curves.easeOutCirc;
   double ruutuSize = 100;
 
   @override
   void initState() {
-    // WidgetsBinding.instance.addPostFrameCallback(_afterLayout); what is this?
     createOfflineBoard();
     //createBoardOnline(); //no code yet
   }
@@ -57,34 +56,44 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
-    return Scaffold(
-      appBar: AppBar(
-        title: Center(child: Text(appBarText)),
-      ),
-      body: SizedBox(
-        child: AbsorbPointer(
-          absorbing: pointerDown,
-          child: GestureDetector(
-            onPanDown: updateBoardOnPanDown,
-            onPanUpdate: updateBoardOnPan,
-            onPanEnd: updateOnPanEnd,
-            child: Padding(
-              padding: const EdgeInsets.all(25.0),
-              child: Board(),
+
+    return Column(
+      children: [
+        Expanded(
+          child: Container(
+            color: Colors.greenAccent,
+            child: Text(becameText),
+          ),
+        ),
+        Container(
+          /*  */
+          color: Colors.blue.shade100,
+          child: AbsorbPointer(
+            absorbing: pointerDown,
+            child: GestureDetector(
+              onPanDown: updateBoardOnPanDown,
+              onPanUpdate: updateBoardOnPan,
+              onPanEnd: updateOnPanEnd,
+              child: Padding(
+                padding: const EdgeInsets.all(25.0),
+                child: Lauta(),
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget Board() {
-    return Container(
-      child: LayoutBuilder(
-        builder: (context, constraints) => GridView.count(
+  Widget Lauta() {
+    return LayoutBuilder(
+      builder: (context, constraints) => Container(
+        height: constraints.maxWidth,
+        color: Colors.amber,
+        child: GridView.count(
             childAspectRatio: 1,
-            crossAxisSpacing: constraints.maxWidth / 4 * 0.1,
-            mainAxisSpacing: constraints.maxWidth / 4 * 0.1,
+            crossAxisSpacing: constraints.maxWidth / 4 * 0.12,
+            mainAxisSpacing: constraints.maxWidth / 4 * 0.12,
             physics: NeverScrollableScrollPhysics(),
             crossAxisCount: 4,
             children: ruutuList.map((lis) {
@@ -98,25 +107,27 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
 
   AnimatedContainer Ruutu(
       int index, GlobalKey key, BoxConstraints constraints) {
+    bool selected = downedIndexesList.contains(index);
     return AnimatedContainer(
       key: key,
-      margin: downedIndexesList.contains(index)
-          ? EdgeInsets.all(5)
-          : EdgeInsets.all(0),
+      margin: selected ? EdgeInsets.all(5) : EdgeInsets.all(0),
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(constraints.maxWidth / 4 * 0.2),
-          color: getColor(index)),
-      child: Center(child:
-          LayoutBuilder(builder: (BuildContext c, BoxConstraints strain) {
-        return Text(
-          letterList[index].toUpperCase(),
-          style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: strain.maxHeight * 0.6,
-              fontFamily: 'Courier'),
-        );
-      })),
-      duration: Duration(milliseconds: 600),
+        borderRadius: BorderRadius.circular(constraints.maxWidth / 4 * 0.2),
+        color: getColor(index),
+        /* border: Border.all(color: Colors.black, width: selected ? 5 : 0.0), */
+      ),
+      child: Center(
+        child: LayoutBuilder(builder: (BuildContext c, BoxConstraints strain) {
+          return Text(
+            letterList[index].toUpperCase(),
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: strain.maxHeight * 0.6,
+                fontFamily: 'Courier'),
+          );
+        }),
+      ),
+      duration: Duration(milliseconds: 400),
       curve: curve,
     );
   }
@@ -137,7 +148,6 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
   }
 
   void updateBoardOnPanDown(DragDownDetails t) {
-    setRuutuSize();
     int currentPointerIndex = getCurrentPointerIndexD(t);
     if (isActivatable(currentPointerIndex)) {
       downedIndexesList.add(currentPointerIndex);
@@ -146,7 +156,7 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
     setState(() {
       pointerDown = true;
       int length = downedIndexesList.length;
-      appBarText = becameList.toString() /* '$length $downedIndexesList' */;
+      becameText = becameList.toString() /* '$length $downedIndexesList' */;
     });
   }
 
@@ -163,17 +173,16 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
       wentBackToLastIndex(currentPointerIndex);
 
       int length = downedIndexesList.length;
-      appBarText = becameList.toString() /* '$length $downedIndexesList' */;
+      becameText = becameList.toString() /* '$length $downedIndexesList' */;
     });
   }
 
   void updateOnPanEnd(DragEndDetails t) {
+    int length = downedIndexesList.length;
+    print('Length: $length   Indexes: $downedIndexesList');
     setState(() {
       pointerDown = false;
       pointerDown ? ccolor = downColor : ccolor = upColor;
-
-      int length = downedIndexesList.length;
-      appBarText = '$length $downedIndexesList';
       downedIndexesList.clear();
       becameList.clear();
     });
@@ -340,11 +349,6 @@ class _SanamahtiBoardState extends State<SanamahtiBoard> {
     postitionlist.add(ruutuPosition.dy + ruutuBox.size.height);
 
     return postitionlist;
-  }
-
-  setRuutuSize() {
-    RenderBox ruutu = ruutuList[0][0].currentContext.findRenderObject();
-    this.ruutuSize = ruutu.size.width;
   }
 
   bool isActivatable(int currentPointerIndex) {
