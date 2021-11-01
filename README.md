@@ -1,4 +1,4 @@
-# sanajahti
+# Sanajahti
 
 Minun oma flutter-projekti, jossa kokeilen oman sanajahti-pelin rakentamista. 
 
