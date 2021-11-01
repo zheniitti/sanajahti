@@ -1,6 +1,6 @@
 # Sanajahti
 
-Minun oma flutter-projekti, jossa kokeilen oman sanajahti-pelin rakentamista. Projektin voi ajaa selaimessa, android-emulaattorissa tai puhelimessa.
+Minun oma flutter-projekti, jossa kokeilen oman sanajahti-pelin rakentamista. Sovelluksen voi ajaa selaimessa, android-emulaattorissa tai puhelimessa.
 
 ## Getting Started
 
